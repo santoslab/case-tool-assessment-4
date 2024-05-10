@@ -141,10 +141,12 @@ repository.
 **Build and simulate the system**
 
 ```
-/home/camkes-tool-assessment-4/vm/test_event_data_port_periodic_domains_VM/receiver_vm/hamr/camkes-seL4/bin/run-camkes.sh -c /Users/belt/devel/git/case-tool-assessment-4/vm/test_event_data_port_periodic_domains_VM/receiver_vm/hamr/camkes-seL4 -s
+/home/camkes-tool-assessment-4/vm/test_event_data_port_periodic_domains_VM/receiver_vm/hamr/camkes-seL4/bin/run-camkes.sh -c /home/camkes-vm -s
 ```
 
 Type ``CTRL`` + ``a`` then `x` to exit the QEMU simulation
+
+<!--end____vm-micro-example_vm_vm-rerun_vm-rerun-buildsim-->
 
 **Note**: the above command will successfully build an image and then try to simulate it via
 
@@ -179,8 +181,6 @@ install_vm_devices@main.c:704 module name: virtio_con
 install_vm_devices@main.c:704 module name: cross_vm_connections
 Loading Kernel: 'linux'
 ```
-
-<!--end____vm-micro-example_vm_vm-rerun_vm-rerun-buildsim-->
 
 ### <!--start__vm-micro-example_vm_vm_camkesarch-title-->CAmkES Architecture<!--end____vm-micro-example_vm_vm_camkesarch-title-->
 <!--start__vm-micro-example_vm_vm_camkesarch-description-->

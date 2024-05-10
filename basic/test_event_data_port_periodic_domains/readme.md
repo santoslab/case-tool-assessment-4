@@ -147,7 +147,7 @@ repository.
 **Build and simulate the system**
 
 ```
-/home/camkes-tool-assessment-4/basic/test_event_data_port_periodic_domains/hamr/camkes-seL4_Only/bin/run-camkes.sh -c /Users/belt/devel/git/case-tool-assessment-4/basic/test_event_data_port_periodic_domains/hamr/camkes-seL4_Only -s
+/home/camkes-tool-assessment-4/basic/test_event_data_port_periodic_domains/hamr/camkes-seL4_Only/bin/run-camkes.sh -c /home/camkes -s
 ```
 
 Type ``CTRL`` + ``a`` then `x` to exit the QEMU simulation
@@ -218,7 +218,7 @@ Type ``CTRL`` + ``a`` then `x` to exit the QEMU simulation
 **Build and simulate the system**
 
 ```
-/home/camkes-tool-assessment-4/basic/test_event_data_port_periodic_domains/hamr/camkes-seL4/bin/run-camkes.sh -c /Users/belt/devel/git/case-tool-assessment-4/basic/test_event_data_port_periodic_domains/hamr/camkes-seL4 -s
+/home/camkes-tool-assessment-4/basic/test_event_data_port_periodic_domains/hamr/camkes-seL4/bin/run-camkes.sh -c /home/camkes -s
 ```
 
 Type ``CTRL`` + ``a`` then `x` to exit the QEMU simulation

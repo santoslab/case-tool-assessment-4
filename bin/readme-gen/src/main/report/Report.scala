@@ -1191,6 +1191,11 @@ object Report {
         )
     }
 
+    val camkesRepoDir: ST =
+      t match {
+        case i: vm => st"/home/camkes-vm"
+        case i: Sel4Config => st"/home/camkes"
+      }
     val howToRerun = ReportLevel(
       tag = createTag(s"${t.name}-rerun"),
       title = Some(st"How to build and run"),
@@ -1210,7 +1215,7 @@ object Report {
             st"""**Build and simulate the system**
                 |
                 |```
-                |/home/camkes-tool-assessment-4/${repoRoot.relativize(camkesDir / "bin" / s"run-camkes.sh -c ${camkesDir} -s")}
+                |/home/camkes-tool-assessment-4/${repoRoot.relativize(camkesDir / "bin" / s"run-camkes.sh")} -c $camkesRepoDir -s
                 |```
                 |
                 |Type ``CTRL`` + ``a`` then `x` to exit the QEMU simulation
