@@ -134,14 +134,14 @@ repository.
 **OPTIONAL: Rerun Codegen**
 
 ```
-/home/camkes-tool-assessment-4/vm/test_event_data_port_periodic_domains_VM/receiver_vm/aadl/bin/run-hamr.cmd seL4
+/home/case-tool-assessment-4/vm/test_event_data_port_periodic_domains_VM/receiver_vm/aadl/bin/run-hamr.cmd seL4
 ```
 <!--end____vm-micro-example_vm_vm-rerun_vm-rerun-codegen-->
 <!--start__vm-micro-example_vm_vm-rerun_vm-rerun-buildsim-->
 **Build and simulate the system**
 
 ```
-/home/camkes-tool-assessment-4/vm/test_event_data_port_periodic_domains_VM/receiver_vm/hamr/camkes-seL4/bin/run-camkes.sh -c /home/camkes-vm -s
+/home/case-tool-assessment-4/vm/test_event_data_port_periodic_domains_VM/receiver_vm/hamr/camkes-seL4/bin/run-camkes.sh -c /home/camkes-vm -s
 ```
 
 Type ``CTRL`` + ``a`` then `x` to exit the QEMU simulation

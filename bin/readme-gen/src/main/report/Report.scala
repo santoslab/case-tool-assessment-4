@@ -1207,7 +1207,7 @@ object Report {
             st"""**OPTIONAL: Rerun Codegen**
                 |
                 |```
-                |/home/camkes-tool-assessment-4/${repoRoot.relativize(project.aadlRootDir)}/bin/run-hamr.cmd ${target}
+                |/home/case-tool-assessment-4/${repoRoot.relativize(project.aadlRootDir)}/bin/run-hamr.cmd ${target}
                 |```""")),
         ReportBlock(
           tag = createTag(s"${t.name}-rerun-buildsim"),
@@ -1215,7 +1215,7 @@ object Report {
             st"""**Build and simulate the system**
                 |
                 |```
-                |/home/camkes-tool-assessment-4/${repoRoot.relativize(camkesDir / "bin" / s"run-camkes.sh")} -c $camkesRepoDir -s
+                |/home/case-tool-assessment-4/${repoRoot.relativize(camkesDir / "bin" / s"run-camkes.sh")} -c $camkesRepoDir -s
                 |```
                 |
                 |Type ``CTRL`` + ``a`` then `x` to exit the QEMU simulation

@@ -140,14 +140,14 @@ repository.
 **OPTIONAL: Rerun Codegen**
 
 ```
-/home/camkes-tool-assessment-4/basic/test_event_port_periodic_domains/aadl/bin/run-hamr.cmd seL4_Only
+/home/case-tool-assessment-4/basic/test_event_port_periodic_domains/aadl/bin/run-hamr.cmd seL4_Only
 ```
 <!--end____event-port-micro-example_sel4_only_sel4_only-rerun_sel4_only-rerun-codegen-->
 <!--start__event-port-micro-example_sel4_only_sel4_only-rerun_sel4_only-rerun-buildsim-->
 **Build and simulate the system**
 
 ```
-/home/camkes-tool-assessment-4/basic/test_event_port_periodic_domains/hamr/camkes-seL4_Only/bin/run-camkes.sh -c /home/camkes -s
+/home/case-tool-assessment-4/basic/test_event_port_periodic_domains/hamr/camkes-seL4_Only/bin/run-camkes.sh -c /home/camkes -s
 ```
 
 Type ``CTRL`` + ``a`` then `x` to exit the QEMU simulation
@@ -209,14 +209,14 @@ Type ``CTRL`` + ``a`` then `x` to exit the QEMU simulation
 **OPTIONAL: Rerun Codegen**
 
 ```
-/home/camkes-tool-assessment-4/basic/test_event_port_periodic_domains/aadl/bin/run-hamr.cmd seL4
+/home/case-tool-assessment-4/basic/test_event_port_periodic_domains/aadl/bin/run-hamr.cmd seL4
 ```
 <!--end____event-port-micro-example_sel4_sel4-rerun_sel4-rerun-codegen-->
 <!--start__event-port-micro-example_sel4_sel4-rerun_sel4-rerun-buildsim-->
 **Build and simulate the system**
 
 ```
-/home/camkes-tool-assessment-4/basic/test_event_port_periodic_domains/hamr/camkes-seL4/bin/run-camkes.sh -c /home/camkes -s
+/home/case-tool-assessment-4/basic/test_event_port_periodic_domains/hamr/camkes-seL4/bin/run-camkes.sh -c /home/camkes -s
 ```
 
 Type ``CTRL`` + ``a`` then `x` to exit the QEMU simulation
