@@ -13,8 +13,8 @@ int counter = 0;
 
 void init(void) {
   printf("%s: Init\n", ID);
-    
-  ((int*) to_consumer_vaddr)[0] = counter;
+  counter = 0;
+  *((int*) to_consumer_vaddr) = counter;
 }
 
 void notified(microkit_channel channel) {
