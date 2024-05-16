@@ -21,7 +21,20 @@ object ReadmeGen extends App {
 
     def producerBehaviorCode: Os.Path
     def consumerBehaviorCode: Os.Path
+  }
 
+  @datatype class Microkit(val system: Os.Path,
+
+                           val producerBehaviorCode: Os.Path,
+                           val consumerBehaviorCode: Os.Path,
+
+                           val periodicDispatcher: Option[Os.Path],
+                           val end_of_schedule_ping: Option[Os.Path]
+                          ) extends Target {
+    def name: String = "Microkit"
+  }
+
+  @sig trait CAmkES extends Target {
     def producerCamkesComponent: Os.Path
     def producerCamkesInfrastructure: Os.Path
 
@@ -34,7 +47,7 @@ object ReadmeGen extends App {
     def jimC: Option[Os.Path]
   }
 
-  @sig trait Sel4Config extends Target {
+  @sig trait Sel4Config extends CAmkES {
     def consumerCamkesInfrastructure: Os.Path
   }
 
@@ -87,7 +100,7 @@ object ReadmeGen extends App {
                      val jimCounter: Option[Os.Path],
                      val jimH: Option[Os.Path],
                      val jimC: Option[Os.Path]
-                    ) extends Target {
+                    ) extends CAmkES {
     def name: String = "vm"
   }
 
@@ -125,6 +138,11 @@ object ReadmeGen extends App {
           root = projRootDir,
           producerPrefix = "producer_thread_i", producerSuffix = "_producer_producer",
           consumerPrefix = "consumer_thread_i", consumerSuffix="_consumer_consumer",
+        ),
+        populateMicokit(
+          portType = "data",
+          root = projRootDir,
+          system = "dataport.system"
         ),
         populateSeL4(
           target = "seL4",
@@ -388,4 +406,14 @@ object ReadmeGen extends App {
       jimC = jimC)
   }
 
+  def populateMicokit(portType: String, root: Os.Path, system: String): Microkit = {
+    val mkDir = root / "microkit"
+    return Microkit(
+      system = mkDir / system,
+      producerBehaviorCode = mkDir / "producer.c",
+      consumerBehaviorCode = mkDir / "consumer.c",
+      periodicDispatcher = Some(mkDir / "periodic_dispatcher.c"),
+      end_of_schedule_ping = Some(mkDir / "end_of_schedule_ping.c")
+    )
+  }
 }

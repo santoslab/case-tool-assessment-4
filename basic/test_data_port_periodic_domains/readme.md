@@ -47,21 +47,33 @@ repository.
    cd case-tool-assessment-4
    ```
 
-1. Download and run the CAmkES docker container and fetch the camkes and camkes-vm repos
+1. Download and run the CAmkES docker container
+
+   **NOTE**: Add the option `--platform linux/arm64` if on ARM
 
    ```
-   docker run --rm -it -w /home -v $(pwd):/home/case-tool-assessment-4 trustworthysystems/camkes
+   docker run -it -w /root -v $(pwd):/root/case-tool-assessment-4 trustworthysystems/camkes
+   ```
+
+   Copy and paste the following into the container in order to fetch CAmkES, CAmkES-VM, and the Microkit SDK
+
+   ```
    git config --global user.email ""
    git config --global user.name ""
-   mkdir camkes
-   cd camkes
-   repo init -u https://github.com/seL4/camkes-manifest.git
-   repo sync
-   cd ..
-   mkdir camkes-vm
-   repo init -u https://github.com/seL4/camkes-vm-examples-manifest.git
-   repo sync
-   cd ..
+   #
+   (mkdir camkes && cd camkes && \
+     repo init -u https://github.com/seL4/camkes-manifest.git && \
+     repo sync)
+   #
+   (mkdir camkes-vm && cd camkes-vm && \
+     repo init -u https://github.com/seL4/camkes-vm-examples-manifest.git && \
+     repo sync)
+   #
+   (curl -L trustworthy.systems/Downloads/microkit_tutorial/sdk-linux-x64.tar.gz -o sdk.tar.gz && \
+     tar xf sdk.tar.gz && mv sdk microkit_sdk && \
+     echo "export MICROKIT_SDK=$(pwd)/microkit_sdk" >> $HOME/.bashrc)
+   #
+   source $HOME/.bashrc
    ```
 
 1. *OPTIONAL*
@@ -69,20 +81,20 @@ repository.
     If you want to rerun codegen then you will need to install Sireum
     and OSATE into the container.
 
-    While in the docker container, install Sireum
+    Copy/paste the following into the container to install Sireum
     ```
-    (DIR=Sireum && export SIREUM_V=4.20240508.f1c262c && rm -fR $DIR && mkdir -p $DIR/bin && cd $DIR/bin && curl -JLso init.sh https://raw.githubusercontent.com/sireum/kekinian/$SIREUM_V/bin/init.sh && bash init.sh)
-    echo "export SIREUM_HOME=$(pwd)/Sireum" >> ~/.bashrc
-    echo "export PATH=\$SIREUM_HOME/bin:\$PATH" >> ~/.bashrc
-    source ~/.bashrc
+    (DIR=$HOME/Sireum && export SIREUM_V=4.20240508.f1c262c && rm -fR $DIR && mkdir -p $DIR/bin && cd $DIR/bin && curl -JLso init.sh https://raw.githubusercontent.com/sireum/kekinian/$SIREUM_V/bin/init.sh && bash init.sh)
+    echo "export SIREUM_HOME=$HOME/Sireum" >> $HOME/.bashrc
+    echo "export PATH=\$SIREUM_HOME/bin:\$PATH" >> $HOME/.bashrc
+    source $HOME/.bashrc
     ```
 
-    Now install OSATE/
+    Now copy/paste the following to install OSATE
 
     ```
-    sireum hamr phantom -u -v -o $(pwd)/osate
-    echo "export OSATE_HOME=\$(pwd)/osate" >> ~/.bashrc
-    source ~/.bashrc
+    sireum hamr phantom -u -v -o $HOME/osate
+    echo "export OSATE_HOME=$HOME/osate" >> $HOME/.bashrc
+    source $HOME/.bashrc
     ```
 
     The following instructions related to rerunning HAMR Codegen assumes
@@ -142,14 +154,14 @@ repository.
 **OPTIONAL: Rerun Codegen**
 
 ```
-/home/case-tool-assessment-4/basic/test_data_port_periodic_domains/aadl/bin/run-hamr.cmd seL4_Only
+/root/case-tool-assessment-4/basic/test_data_port_periodic_domains/aadl/bin/run-hamr.cmd seL4_Only
 ```
 <!--end____data-port-micro-example_sel4_only_sel4_only-rerun_sel4_only-rerun-codegen-->
 <!--start__data-port-micro-example_sel4_only_sel4_only-rerun_sel4_only-rerun-buildsim-->
 **Build and simulate the system**
 
 ```
-/home/case-tool-assessment-4/basic/test_data_port_periodic_domains/hamr/camkes-seL4_Only/bin/run-camkes.sh -c /home/camkes -s
+/root/case-tool-assessment-4/basic/test_data_port_periodic_domains/hamr/camkes-seL4_Only/bin/run-camkes.sh -c /root/camkes -s
 ```
 
 Type ``CTRL`` + ``a`` then `x` to exit the QEMU simulation
@@ -162,6 +174,40 @@ Type ``CTRL`` + ``a`` then `x` to exit the QEMU simulation
 <!--start__data-port-micro-example_sel4_only_sel4_only_camkesarch_sel4_only_camkesarch_block-->
 ![CAmkES-HAMR-arch-seL4_Only.svg](aadl/diagrams/CAmkES-HAMR-arch-seL4_Only.svg)
 <!--end____data-port-micro-example_sel4_only_sel4_only_camkesarch_sel4_only_camkesarch_block-->
+
+## <!--start__data-port-micro-example_microkit-title-->Microkit<!--end____data-port-micro-example_microkit-title-->
+
+<!--start__data-port-micro-example_microkit_microkit_system-title-->Microkit System<!--end____data-port-micro-example_microkit_microkit_system-title-->
+
+ <!--start__data-port-micro-example_microkit_microkit_system_microkit_system_block-->
+ - [dataport.system](microkit/dataport.system)
+<!--end____data-port-micro-example_microkit_microkit_system_microkit_system_block-->
+
+<!--start__data-port-micro-example_microkit_microkit_behavior-title-->Behavior Code<!--end____data-port-micro-example_microkit_microkit_behavior-title-->
+<!--start__data-port-micro-example_microkit_microkit_behavior_microkit_behavior_block-->
+ - [producer.c](microkit/producer.c)
+ - [consumer.c](microkit/consumer.c)
+
+<!--end____data-port-micro-example_microkit_microkit_behavior_microkit_behavior_block-->
+
+
+<!--start__data-port-micro-example_microkit_microkit_periodic_hack-title-->Periodic Dispatching Artifacts<!--end____data-port-micro-example_microkit_microkit_periodic_hack-title-->
+
+ <!--start__data-port-micro-example_microkit_microkit_periodic_hack_microkit_periodic_hack_block-->
+ - [periodic_dispatcher.c](microkit/periodic_dispatcher.c)
+ - [end_of_schedule_ping.c](microkit/end_of_schedule_ping.c)
+<!--end____data-port-micro-example_microkit_microkit_periodic_hack_microkit_periodic_hack_block-->
+
+
+<!--start__data-port-micro-example_microkit_microkit_rerun-title-->How to build and run<!--end____data-port-micro-example_microkit_microkit_rerun-title-->
+
+<!--start__data-port-micro-example_microkit_microkit_rerun_microkit_rerun_blcok-->
+
+```
+cd /root/case-tool-assessment-4/basic/test_data_port_periodic_domains/microkit
+make run
+```
+<!--end____data-port-micro-example_microkit_microkit_rerun_microkit_rerun_blcok-->
 
 ## <!--start__data-port-micro-example_sel4-title-->seL4<!--end____data-port-micro-example_sel4-title-->
 <!--start__data-port-micro-example_sel4-description-->
@@ -213,14 +259,14 @@ Type ``CTRL`` + ``a`` then `x` to exit the QEMU simulation
 **OPTIONAL: Rerun Codegen**
 
 ```
-/home/case-tool-assessment-4/basic/test_data_port_periodic_domains/aadl/bin/run-hamr.cmd seL4
+/root/case-tool-assessment-4/basic/test_data_port_periodic_domains/aadl/bin/run-hamr.cmd seL4
 ```
 <!--end____data-port-micro-example_sel4_sel4-rerun_sel4-rerun-codegen-->
 <!--start__data-port-micro-example_sel4_sel4-rerun_sel4-rerun-buildsim-->
 **Build and simulate the system**
 
 ```
-/home/case-tool-assessment-4/basic/test_data_port_periodic_domains/hamr/camkes-seL4/bin/run-camkes.sh -c /home/camkes -s
+/root/case-tool-assessment-4/basic/test_data_port_periodic_domains/hamr/camkes-seL4/bin/run-camkes.sh -c /root/camkes -s
 ```
 
 Type ``CTRL`` + ``a`` then `x` to exit the QEMU simulation

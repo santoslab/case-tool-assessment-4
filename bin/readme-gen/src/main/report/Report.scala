@@ -3,11 +3,12 @@ package report
 
 import org.sireum._
 import org.sireum.hamr.act.periodic.PeriodicUtil
+import org.sireum.hamr.arsit.HAMR.OS.CAmkES
 import org.sireum.hamr.codegen.common.StringUtil
 import org.sireum.hamr.codegen.common.symbols.{AadlComponent, AadlProcessor, AadlThread, SymbolTable}
 import org.sireum.hamr.ir
 import org.sireum.message.{Position, Reporter}
-import report.ReadmeGen.{Project, Sel4Config, projects, repoRootDir, vm}
+import report.ReadmeGen.{CAmkES, Microkit, Project, Sel4Config, projects, repoRootDir, vm}
 import report.Report._
 
 @sig trait Level {
@@ -1013,21 +1014,33 @@ object Report {
             |   cd case-tool-assessment-4
             |   ```
             |
-            |1. Download and run the CAmkES docker container and fetch the camkes and camkes-vm repos
+            |1. Download and run the CAmkES docker container
+            |
+            |   **NOTE**: Add the option `--platform linux/arm64` if on ARM
             |
             |   ```
-            |   docker run --rm -it -w /home -v $$(pwd):/home/case-tool-assessment-4 trustworthysystems/camkes
+            |   docker run -it -w /root -v $$(pwd):/root/case-tool-assessment-4 trustworthysystems/camkes
+            |   ```
+            |
+            |   Copy and paste the following into the container in order to fetch CAmkES, CAmkES-VM, and the Microkit SDK
+            |
+            |   ```
             |   git config --global user.email ""
             |   git config --global user.name ""
-            |   mkdir camkes
-            |   cd camkes
-            |   repo init -u https://github.com/seL4/camkes-manifest.git
-            |   repo sync
-            |   cd ..
-            |   mkdir camkes-vm
-            |   repo init -u https://github.com/seL4/camkes-vm-examples-manifest.git
-            |   repo sync
-            |   cd ..
+            |   #
+            |   (mkdir camkes && cd camkes && \
+            |     repo init -u https://github.com/seL4/camkes-manifest.git && \
+            |     repo sync)
+            |   #
+            |   (mkdir camkes-vm && cd camkes-vm && \
+            |     repo init -u https://github.com/seL4/camkes-vm-examples-manifest.git && \
+            |     repo sync)
+            |   #
+            |   (curl -L trustworthy.systems/Downloads/microkit_tutorial/sdk-linux-x64.tar.gz -o sdk.tar.gz && \
+            |     tar xf sdk.tar.gz && mv sdk microkit_sdk && \
+            |     echo "export MICROKIT_SDK=$$(pwd)/microkit_sdk" >> $$HOME/.bashrc)
+            |   #
+            |   source $$HOME/.bashrc
             |   ```
             |
             |1. *OPTIONAL*
@@ -1035,20 +1048,20 @@ object Report {
             |    If you want to rerun codegen then you will need to install Sireum
             |    and OSATE into the container.
             |
-            |    While in the docker container, install Sireum
+            |    Copy/paste the following into the container to install Sireum
             |    ```
-            |    (DIR=Sireum && export SIREUM_V=4.20240508.f1c262c && rm -fR $$DIR && mkdir -p $$DIR/bin && cd $$DIR/bin && curl -JLso init.sh https://raw.githubusercontent.com/sireum/kekinian/$$SIREUM_V/bin/init.sh && bash init.sh)
-            |    echo "export SIREUM_HOME=$$(pwd)/Sireum" >> ~/.bashrc
-            |    echo "export PATH=\$$SIREUM_HOME/bin:\$$PATH" >> ~/.bashrc
-            |    source ~/.bashrc
+            |    (DIR=$$HOME/Sireum && export SIREUM_V=4.20240508.f1c262c && rm -fR $$DIR && mkdir -p $$DIR/bin && cd $$DIR/bin && curl -JLso init.sh https://raw.githubusercontent.com/sireum/kekinian/$$SIREUM_V/bin/init.sh && bash init.sh)
+            |    echo "export SIREUM_HOME=$$HOME/Sireum" >> $$HOME/.bashrc
+            |    echo "export PATH=\$$SIREUM_HOME/bin:\$$PATH" >> $$HOME/.bashrc
+            |    source $$HOME/.bashrc
             |    ```
             |
-            |    Now install OSATE/
+            |    Now copy/paste the following to install OSATE
             |
             |    ```
-            |    sireum hamr phantom -u -v -o $$(pwd)/osate
-            |    echo "export OSATE_HOME=\$$(pwd)/osate" >> ~/.bashrc
-            |    source ~/.bashrc
+            |    sireum hamr phantom -u -v -o $$HOME/osate
+            |    echo "export OSATE_HOME=$$HOME/osate" >> $$HOME/.bashrc
+            |    source $$HOME/.bashrc
             |    ```
             |
             |    The following instructions related to rerunning HAMR Codegen assumes
@@ -1101,137 +1114,211 @@ object Report {
     )
   }
 
-  private def genTargetBlock(t: ReadmeGen.Target, project: Project, table: SymbolTable): ReportLevel = {
-    val target = if (t.name == "vm") "seL4" else t.name
-    val camkesDir: Os.Path = project.hamrDir / s"camkes-${target}"
+  private def genTargetBlock(targetType: ReadmeGen.Target, project: Project, table: SymbolTable): ReportLevel = {
+    targetType match {
+      case t: CAmkES =>
 
-    val dot = camkesDir / "graph.dot"
-    val dest = project.aadlRootDir / "diagrams" / s"CAmkES-HAMR-arch-${target}.svg"
-    proc"dot -Tsvg -o $dest $dot".runCheck()
+        val target = if (t.name == "vm") "seL4" else t.name
+        val camkesDir: Os.Path = project.hamrDir / s"camkes-${target}"
 
-    val dir = project.hamrDir / "camkes"
-    val camkesArch = ReportLevel(
-      tag = createTag(s"${t.name}_camkesarch"),
-      title = Some(st"CAmkES Architecture"),
-      description = None(),
-      content = ISZ(ReportBlock(
-        tag = createTag(s"${t.name}_camkesarch_block"),
-        content = Some(
-          st"""![${dest.name}](${project.projectRootDir.relativize(dest)})"""))),
-      subLevels = ISZ())
+        val dot = camkesDir / "graph.dot"
+        val dest = project.aadlRootDir / "diagrams" / s"CAmkES-HAMR-arch-${target}.svg"
+        proc"dot -Tsvg -o $dest $dot".runCheck()
 
-    val behaviorCode = ReportLevel(
-      tag = createTag(s"${t.name}_behavior"),
-      title = Some(st"Behavior Code"),
-      description = None(),
-      content = ISZ(ReportBlock(
-        tag = createTag(s"${t.name}_behavior_block"),
-        content = Some(
-          st""" - [${t.producerBehaviorCode.name}](${project.projectRootDir.relativize(t.producerBehaviorCode)})
-              | - [${t.consumerBehaviorCode.name}](${project.projectRootDir.relativize(t.consumerBehaviorCode)})"""))),
-      subLevels = ISZ())
-
-    val camkesAssembly = ReportLevel(
-      tag = createTag(s"${t.name}_assembly"),
-      title = Some(st"$camkes Assembly"),
-      description = None(),
-      content = ISZ(ReportBlock(
-        tag = createTag(s"${t.name}_assembly_block"),
-        content = Some(st""" - [${t.camkesRoot.name}](${project.projectRootDir.relativize(t.camkesRoot)})"""))),
-      subLevels = ISZ())
-
-    val camkesProducerArtifacts = ReportLevel(
-      tag = createTag(s"${t.name}_producer"),
-      title = Some(st"$camkes Producer Artifacts"),
-      description = None(),
-      content = ISZ(ReportBlock(
-        tag = createTag(s"${t.name}_producer_block"),
-        content = Some(
-          st""" - [$camkes component](${project.projectRootDir.relativize(t.producerCamkesComponent)})
-              | - [Infrastructure Code](${project.projectRootDir.relativize(t.producerCamkesInfrastructure)})"""))),
-      subLevels = ISZ())
-
-    val infracode = t match {
-      case i: vm => st"*infrastructure and behavior code are combined for VMs*"
-      case i: Sel4Config => st"[Infrastructure Code](${project.projectRootDir.relativize(i.consumerCamkesInfrastructure)})"
-    }
-    val camkesConsumerArtifacts = ReportLevel(
-      tag = createTag(s"${t.name}_consumer"),
-      title = Some(st"$camkes Consumer Artifacts"),
-      description = None(),
-      content = ISZ(ReportBlock(
-        tag = createTag(s"${t.name}_consumer_block"),
-        content =
-          Some(
-            st""" - [$camkes component](${project.projectRootDir.relativize(t.consumerCamkesComponent)})
-                | - $infracode"""))),
-      subLevels = ISZ())
-
-    var sublevels = ISZ(behaviorCode, camkesAssembly, camkesProducerArtifacts, camkesConsumerArtifacts)
-
-    val shim = t match {
-      case i: vm =>
-      case i: Sel4Config =>
-        val counter: Option[ST] = if (i.jimCounter.nonEmpty) Some(st" - [Event Counter](${project.projectRootDir.relativize(i.jimCounter.get)})") else None()
-        val includes: Option[ST] = if (i.jimH.nonEmpty) Some(st" - [Header](${project.projectRootDir.relativize(i.jimH.get)})") else None()
-        val impl: Option[ST] = if (i.jimC.nonEmpty) Some(st" - [Implementation](${project.projectRootDir.relativize(i.jimC.get)})") else None()
-
-        sublevels = sublevels :+ ReportLevel(
-          tag = createTag(s"${t.name}_shim"),
-          title = Some(st"Message Shim Code"),
+        val dir = project.hamrDir / "camkes"
+        val camkesArch = ReportLevel(
+          tag = createTag(s"${t.name}_camkesarch"),
+          title = Some(st"CAmkES Architecture"),
           description = None(),
           content = ISZ(ReportBlock(
-            tag = createTag(s"${t.name}_shim_block"),
+            tag = createTag(s"${t.name}_camkesarch_block"),
             content = Some(
-              st"""$impl
-                  |$includes
-                  |$counter""")
+              st"""![${dest.name}](${project.projectRootDir.relativize(dest)})"""))),
+          subLevels = ISZ())
+
+        val behaviorCode = ReportLevel(
+          tag = createTag(s"${t.name}_behavior"),
+          title = Some(st"Behavior Code"),
+          description = None(),
+          content = ISZ(ReportBlock(
+            tag = createTag(s"${t.name}_behavior_block"),
+            content = Some(
+              st""" - [${t.producerBehaviorCode.name}](${project.projectRootDir.relativize(t.producerBehaviorCode)})
+                  | - [${t.consumerBehaviorCode.name}](${project.projectRootDir.relativize(t.consumerBehaviorCode)})"""))),
+          subLevels = ISZ())
+
+        val camkesAssembly = ReportLevel(
+          tag = createTag(s"${t.name}_assembly"),
+          title = Some(st"$camkes Assembly"),
+          description = None(),
+          content = ISZ(ReportBlock(
+            tag = createTag(s"${t.name}_assembly_block"),
+            content = Some(st""" - [${t.camkesRoot.name}](${project.projectRootDir.relativize(t.camkesRoot)})"""))),
+          subLevels = ISZ())
+
+        val camkesProducerArtifacts = ReportLevel(
+          tag = createTag(s"${t.name}_producer"),
+          title = Some(st"$camkes Producer Artifacts"),
+          description = None(),
+          content = ISZ(ReportBlock(
+            tag = createTag(s"${t.name}_producer_block"),
+            content = Some(
+              st""" - [$camkes component](${project.projectRootDir.relativize(t.producerCamkesComponent)})
+                  | - [Infrastructure Code](${project.projectRootDir.relativize(t.producerCamkesInfrastructure)})"""))),
+          subLevels = ISZ())
+
+        val infracode = t match {
+          case i: vm => st"*infrastructure and behavior code are combined for VMs*"
+          case i: Sel4Config => st"[Infrastructure Code](${project.projectRootDir.relativize(i.consumerCamkesInfrastructure)})"
+        }
+        val camkesConsumerArtifacts = ReportLevel(
+          tag = createTag(s"${t.name}_consumer"),
+          title = Some(st"$camkes Consumer Artifacts"),
+          description = None(),
+          content = ISZ(ReportBlock(
+            tag = createTag(s"${t.name}_consumer_block"),
+            content =
+              Some(
+                st""" - [$camkes component](${project.projectRootDir.relativize(t.consumerCamkesComponent)})
+                    | - $infracode"""))),
+          subLevels = ISZ())
+
+        var sublevels = ISZ(behaviorCode, camkesAssembly, camkesProducerArtifacts, camkesConsumerArtifacts)
+
+        val shim = t match {
+          case i: vm =>
+          case i: Sel4Config =>
+            val counter: Option[ST] = if (i.jimCounter.nonEmpty) Some(st" - [Event Counter](${project.projectRootDir.relativize(i.jimCounter.get)})") else None()
+            val includes: Option[ST] = if (i.jimH.nonEmpty) Some(st" - [Header](${project.projectRootDir.relativize(i.jimH.get)})") else None()
+            val impl: Option[ST] = if (i.jimC.nonEmpty) Some(st" - [Implementation](${project.projectRootDir.relativize(i.jimC.get)})") else None()
+
+            sublevels = sublevels :+ ReportLevel(
+              tag = createTag(s"${t.name}_shim"),
+              title = Some(st"Message Shim Code"),
+              description = None(),
+              content = ISZ(ReportBlock(
+                tag = createTag(s"${t.name}_shim_block"),
+                content = Some(
+                  st"""$impl
+                      |$includes
+                      |$counter""")
+              )),
+              subLevels = ISZ()
+            )
+        }
+
+        val camkesRepoDir: ST =
+          t match {
+            case i: vm => st"/root/camkes-vm"
+            case i: Sel4Config => st"/root/camkes"
+          }
+        val howToRerun = ReportLevel(
+          tag = createTag(s"${t.name}-rerun"),
+          title = Some(st"How to build and run"),
+          description = None(),
+          content = ISZ(
+            ReportBlock(
+              tag = createTag(s"${t.name}-rerun-codegen"),
+              content = Some(
+                st"""**OPTIONAL: Rerun Codegen**
+                    |
+                    |```
+                    |/root/case-tool-assessment-4/${repoRoot.relativize(project.aadlRootDir)}/bin/run-hamr.cmd ${target}
+                    |```""")),
+            ReportBlock(
+              tag = createTag(s"${t.name}-rerun-buildsim"),
+              content = Some(
+                st"""**Build and simulate the system**
+                    |
+                    |```
+                    |/root/case-tool-assessment-4/${repoRoot.relativize(camkesDir / "bin" / s"run-camkes.sh")} -c $camkesRepoDir -s
+                    |```
+                    |
+                    |Type ``CTRL`` + ``a`` then `x` to exit the QEMU simulation
+                    |""")
+            )
+          ),
+          subLevels = ISZ()
+        )
+
+        sublevels = sublevels ++ ISZ(howToRerun, camkesArch)
+
+        return ReportLevel(
+          tag = createTag(t.name),
+          title = Some(st"${target}"),
+          description = None(),
+          content = ISZ(),
+          subLevels = sublevels)
+
+      case m: Microkit =>
+        val system = ReportLevel(
+          tag = createTag(s"${m.name}_system"),
+          title = Some(st"Microkit System"),
+          description = None(),
+          content = ISZ(ReportBlock(
+            tag = createTag(s"${m.name}_system_block"),
+            content = Some(
+              st""" - [${m.system.name}](${project.projectRootDir.relativize(m.system)})"""
+            )
           )),
           subLevels = ISZ()
         )
-    }
 
-    val camkesRepoDir: ST =
-      t match {
-        case i: vm => st"/home/camkes-vm"
-        case i: Sel4Config => st"/home/camkes"
-      }
-    val howToRerun = ReportLevel(
-      tag = createTag(s"${t.name}-rerun"),
-      title = Some(st"How to build and run"),
-      description = None(),
-      content = ISZ(
-        ReportBlock(
-          tag = createTag(s"${t.name}-rerun-codegen"),
-          content = Some(
-            st"""**OPTIONAL: Rerun Codegen**
-                |
-                |```
-                |/home/case-tool-assessment-4/${repoRoot.relativize(project.aadlRootDir)}/bin/run-hamr.cmd ${target}
-                |```""")),
-        ReportBlock(
-          tag = createTag(s"${t.name}-rerun-buildsim"),
-          content = Some(
-            st"""**Build and simulate the system**
-                |
-                |```
-                |/home/case-tool-assessment-4/${repoRoot.relativize(camkesDir / "bin" / s"run-camkes.sh")} -c $camkesRepoDir -s
-                |```
-                |
-                |Type ``CTRL`` + ``a`` then `x` to exit the QEMU simulation
-                |""")
+        val behaviorCode = ReportLevel(
+          tag = createTag(s"${m.name}_behavior"),
+          title = Some(st"Behavior Code"),
+          description = None(),
+          content = ISZ(ReportBlock(
+            tag = createTag(s"${m.name}_behavior_block"),
+            content = Some(
+              st""" - [${m.producerBehaviorCode.name}](${project.projectRootDir.relativize(m.producerBehaviorCode)})
+                  | - [${m.consumerBehaviorCode.name}](${project.projectRootDir.relativize(m.consumerBehaviorCode)})
+                """
+            )
+          )),
+          subLevels = ISZ()
         )
-      ),
-      subLevels = ISZ()
-    )
 
-    sublevels = sublevels ++ ISZ(howToRerun, camkesArch)
+        var sublevels = ISZ(system, behaviorCode)
 
-    return ReportLevel(
-      tag = createTag(t.name),
-      title = Some(st"${target}"),
-      description = None(),
-      content = ISZ(),
-      subLevels = sublevels)
+        if (m.periodicDispatcher.nonEmpty) {
+          sublevels = sublevels :+ ReportLevel(
+            tag = createTag(s"${m.name}_periodic_hack"),
+            title = Some(st"Periodic Dispatching Artifacts"),
+            description = None(),
+            content = ISZ(ReportBlock(
+              tag = createTag(s"${m.name}_periodic_hack_block"),
+              content = Some(
+                st""" - [${m.periodicDispatcher.get.name}](${project.projectRootDir.relativize(m.periodicDispatcher.get)})
+                    | - [${m.end_of_schedule_ping.get.name}](${project.projectRootDir.relativize(m.end_of_schedule_ping.get)})""")
+            )),
+            subLevels = ISZ()
+          )
+        }
+
+        val howToRun = ReportLevel(
+          tag = createTag(s"${m.name}_rerun"),
+          title = Some(st"How to build and run"),
+          description = None(),
+          content = ISZ(ReportBlock(
+            tag = createTag(s"${m.name}_rerun_blcok"),
+            content = Some(
+              st"""
+                  |```
+                  |cd /root/${repoRoot.name}/${repoRoot.relativize(project.projectRootDir / "microkit")}
+                  |make run
+                  |```"""
+            )
+          )),
+          subLevels = ISZ()
+        )
+        return ReportLevel(
+          tag = createTag(m.name),
+          title = Some(st"Microkit"),
+          description = None(),
+          content = ISZ(),
+          subLevels = sublevels)
+
+    }
   }
 }
