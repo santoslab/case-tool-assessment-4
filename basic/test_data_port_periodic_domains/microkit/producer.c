@@ -24,7 +24,6 @@ void notified(microkit_channel channel) {
 
       *((int*) to_consumer_vaddr) = ++counter;
 
-      printf("---------------------------\n");
       printf("%s: Sent %i \n", ID, counter);
 
       break;

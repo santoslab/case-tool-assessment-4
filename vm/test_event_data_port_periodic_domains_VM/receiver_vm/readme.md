@@ -84,7 +84,7 @@ repository.
 
     Copy/paste the following into the container to install Sireum
     ```
-    (DIR=$HOME/Sireum && export SIREUM_V=4.20240508.f1c262c && rm -fR $DIR && mkdir -p $DIR/bin && cd $DIR/bin && curl -JLso init.sh https://raw.githubusercontent.com/sireum/kekinian/$SIREUM_V/bin/init.sh && bash init.sh)
+    (DIR=$HOME/Sireum && export SIREUM_V=4.20240517.2ba56a5 && rm -fR $DIR && mkdir -p $DIR/bin && cd $DIR/bin && curl -JLso init.sh https://raw.githubusercontent.com/sireum/kekinian/$SIREUM_V/bin/init.sh && bash init.sh)
     echo "export SIREUM_HOME=$HOME/Sireum" >> $HOME/.bashrc
     echo "export PATH=\$SIREUM_HOME/bin:\$PATH" >> $HOME/.bashrc
     source $HOME/.bashrc

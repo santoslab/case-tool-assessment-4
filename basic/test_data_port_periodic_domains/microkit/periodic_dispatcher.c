@@ -26,6 +26,7 @@ void notified(microkit_channel channel) {
   switch(channel) {
     case PORT_FROM_END_OF_SCHEDULE_PING:
       //printf("%s: Received ping\n", ID);  
+      printf("----------------------\n");
       pingComponents();
     break;
   }
