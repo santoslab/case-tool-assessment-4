@@ -211,7 +211,7 @@ const dschedule_t ksDomSchedule[] = { // (1 tick == 2ms)
 We thought it would be possible to get the above structure working in Microkit, using self-notifications and
 by using appropriate priorities, but we couldn't get it to work.
 
-The current Microkit prototype is [here](main/basic/test_data_port_periodic_domains/microkit).
+The current Microkit prototype is [here](https://github.com/santoslab/case-tool-assessment-4/tree/main/basic/test_data_port_periodic_domains/microkit).
 We tried to set up a simple userland static scheduler that notified each PD to indicate the 
 start of its "slot" in the schedule.  The following is excerpted from the 
 [Microkit system file](basic/test_data_port_periodic_domains/microkit/dataport.system).
