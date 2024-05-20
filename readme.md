@@ -143,12 +143,14 @@ Overall, the pattern is
   SendOutputs // release output port values to communication infrastructure
 
   While (true)
+    // wait for scheduling here...
+    // ... when scheduled...
     ReceiveInputs // receive/freeze inputs from communication infrastructure
     ..do one cycle of application behavior..
     SendOutputs // release output port values to communication infrastructure
 ```
 
-This achieves a receive/compute/send patterns for the tasks.  
+This achieves a receiveInput/compute/sendOutput patterns for the tasks.  
 In a simplified view, each task runs to completion and finishes within its declared WCET (which seems similar to Microkit budget).
 
 In AADL, the two basic task types: periodic (time-triggered) and sporadic (event port triggered).
@@ -193,7 +195,7 @@ int run(void) { // CAmkES entry point
 
 ```
 
-Notice that in the domain schedule, domain 0 was interleave with each application thread, and 
+Notice that in the domain schedule, domain 0 was interleaved with each application thread and 
 handled the propagation of notifications after each AADL thread representation,
 ensuring that the next thread in the schedule was also available for computation.
 
