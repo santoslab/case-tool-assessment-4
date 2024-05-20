@@ -54,6 +54,8 @@ about all the variations of AADL queueing policies for the moment.
 
 *If we can get a prototype working using Microkit notification and memory regions, we can easily migrate from CAmkES to microkit, and then continuing refining to get a more elegant implementation from there.*
 
+#### Prototyping for Data Ports
+
 The results of the initial prototyping effort for the data ports microexample can be seen here
 https://github.com/santoslab/case-tool-assessment-4/tree/main/basic/test_data_port_periodic_domains
 
@@ -115,6 +117,148 @@ shared between them (excerpts shown below).
   </protection_domain>
 
 ```
+
+#### Prototyping for Static Scheduling
+
+The HAMR approach to seL4 scheduling on CASE utilized the domain scheduler.  A
+discussion of this can be found in this paper http://pub.santoslab.org/papers/hamr-seL4-belt-al-jsa-submission.pdf
+
+Some key points: 
+* AADL threads correspond more directly to real-time tasks than, e.g., Java threads
+* When a thread is dispatched, the generated AADL infrastructure moves data from
+"appropriate" (defined by a bunch of rules from the AADL standard) 
+communication infrastructure ports into the view of the application code and then does not change during
+the execution of the task application code for the current dispatch.
+This is referred to in the AADL standard as "port freezing" and derives from 653 concepts.  
+* As the thread executes it places data / messages its output ports.  When the task execution is complete,
+the infrastructure releases the output port content to the communication infrastructure.
+* Each thread has two entry points for the application code: (1) an Initialize Entry Point to provide initial
+values of application variables, to provide initial values for output data ports (required), and to (optionally)
+provide messages on output event ports, and (2) a Compute Entry Point corresponding to cyclic application behavior
+(the entry point represents one cycle of functionality).
+
+Overall, the pattern is 
+```
+  Initialize Entry Point
+  SendOutputs // release output port values to communication infrastructure
+
+  While (true)
+    ReceiveInputs // receive/freeze inputs from communication infrastructure
+    ..do one cycle of application behavior..
+    SendOutputs // release output port values to communication infrastructure
+```
+
+This achieves a receive/compute/send patterns for the tasks.  
+In a simplified view, each task runs to completion and finishes within its declared WCET (which seems similar to Microkit budget).
+
+In AADL, the two basic task types: periodic (time-triggered) and sporadic (event port triggered).
+
+We suggest to get the scheduling working for periodic components first.
+
+On CASE, the basic idea is that the domain scheduler was used to enforce temporal partitioning.
+See the [domain schedule](https://github.com/santoslab/case-tool-assessment-4/blob/main/basic/test_data_port_periodic_domains/hamr/camkes-seL4_Only/kernel/domain_schedule.c) used with the example above.   There was a 1-to-1 correspondence between an AADL thread component and a domain (and a CAmkES component).   An AADL process (roughly corresponding to a protected address space) was identified with a CAmkES component (seL4 "partition").  Thus, we had the restriction that each AADL process could contain
+a single thread.
+
+This generally corresponds with the Microkit notion that each PD is single threaded, and for now we suggest identify the concept of an
+AADL thread with a Microkit PD (so far, so good).
+
+A concept called "pacing" use CAmkES notifications to coordinate the initiation of a thread's task dispatch with the beginning of 
+a slot in the domain schedule.   In the CASE "self-pacing" approach, each thread consumed a "TickTock" notification to trigger
+the task dispatch and emitted a "TickTock" notification at the end of a task execution to indicate that it was available for
+dispatch when the slot occurred again in the domain schedule.   For example, see the TickTock notification declarations
+in the Producer Task [CAmkES for the producer](basic/test_data_port_periodic_domains/hamr/camkes-seL4_Only/components/producer_thread_i_producer_producer/producer_thread_i_producer_producer.camkes)
+
+The abstract structure of the task behavioring as necessary to implement the pattern above is reflected in the 
+[Producer Infrastructure Code run method](https://github.com/santoslab/case-tool-assessment-4/blob/47ba47ba8e35c4090453b361c1aedd9fa0a31a5e/basic/test_data_port_periodic_domains/hamr/camkes-seL4_Only/components/producer_thread_i_producer_producer/src/sb_producer_thread_i.c#L38).
+This infrastructure code implemented the CAmkES entry points and used CAmkES level APIs to realize the AADL pattern above.
+```
+int run(void) { // CAmkES entry point
+  {
+    int64_t sb_dummy;
+    sb_entrypoint_producer_thread_i_producer_producer_initializer(&sb_dummy); // trigger the AADL application Initialize Entry Point
+  }
+  sb_self_pacer_tick_emit(); // use a notification to trigger the scheduling of a thread again
+  for(;;) {
+    sb_self_pacer_tock_wait();  // wait on the domain scheduling of pace notification and a domain slot to unblock the AADL Compute Entry Point
+    {
+      int64_t sb_dummy = 0;
+      // trigger the AADL application code compute entry point (along with beginning SendOutputs and ending ReceiveInputs)
+      sb_entrypoint_period_producer_thread_i(&sb_dummy);
+    }
+    // use a notification to trigger the scheduling of a thread again
+    sb_self_pacer_tick_emit();
+  }
+  return 0;
+}
+
+```
+
+Notice that in the domain schedule, domain 0 was interleave with each application thread, and 
+handled the propagation of notifications after each AADL thread representation,
+ensuring that the next thread in the schedule was also available for computation.
+
+```
+const dschedule_t ksDomSchedule[] = { // (1 tick == 2ms)
+    { .domain = 0, .length = 100 }, // all other seL4 threads, init, 200ms
+    { .domain = 2, .length =   5 }, // source       10ms
+    { .domain = 0, .length =  95 }, // domain0     190ms
+    { .domain = 3, .length =   5 }, // destination  10ms
+    { .domain = 0, .length = 295 }, // domain0     590ms    
+```
+
+We thought it would be possible to get the above structure working in Microkit, using self-notifications and
+by using appropriate priorities, but we couldn't get it to work.
+
+The current Microkit prototype is [here](main/basic/test_data_port_periodic_domains/microkit).
+We tried to set up a simple userland static scheduler that notified each PD to indicate the 
+start of its "slot" in the schedule.  The following is excerpted from the 
+[Microkit system file](basic/test_data_port_periodic_domains/microkit/dataport.system).
+
+```
+<!-- pings from periodic dispatcher to the other component -->
+  <channel>
+    <end pd="periodic_dispatcher" id="1" />
+    <end pd="producer" id="1" />
+  </channel>
+
+  <channel>
+    <end pd="periodic_dispatcher" id="2" />
+    <end pd="consumer" id="2" />
+  </channel>
+
+  <channel>
+    <end pd="periodic_dispatcher" id="3" />
+    <end pd="end_of_schedule_ping" id="3" />
+  </channel>
+
+  <!-- ping from end_of_schedule_ping to the periodic dispatcher -->
+  <channel>
+    <end pd="end_of_schedule_ping" id="4" />
+    <end pd="periodic_dispatcher" id="4" />
+  </channel>
+  ```
+
+A [periodic_dispatcher](basic/test_data_port_periodic_domains/microkit/periodic_dispatcher.c) was coded
+to notify each PD/slot in the "static schedule" with priorities declared in the system file for each PD
+to enforce the (Producer;Consumer) ordering.
+
+This seemed to give us the correct ordering, but executing on Qemu ran the threads "very quickly" and 
+they did not seem to obey the declared "period" in the system file.
+
+## Summary of Prototyping Issues
+
+* We noticed in the Microkit documentation that channels were "bi-directional", enabling each end of the 
+channel to notify each other.  It seems best for our purposes to have a uni-direction notification option,
+which seems more appropriate for controlling one-way communication between threads (corresponding to one-way
+AADL port communication).
+
+* In general, we found the Microkit primitives similar to what we used before with CAmkES.  
+
+* If we could simply figure out the appropriate pattern for a static userland scheduler component, 
+it would relatively easy to port from the CASE code generation to Microkit.
+
+* After the above is implemented, we can begin to discuss more in depth alignment with 653, port queuing, etc.
+
 
 
 
