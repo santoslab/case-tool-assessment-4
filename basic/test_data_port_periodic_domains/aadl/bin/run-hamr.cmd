@@ -24,7 +24,10 @@ val sireumBin = Os.path(Os.env("SIREUM_HOME").get) / "bin"
 val sireum = sireumBin / (if(Os.isWin) "sireum.bat" else "sireum")
 
 val osate: Os.Path = Os.env("OSATE_HOME") match {
-  case Some(s) => Os.path(s) / (if (Os.isWin) "osate.exe" else if (Os.isLinux) "osate" else "Contents/MacOS/osate")
+  case Some(s) => Os.path(s) / (
+    if (Os.isWin) "osate.exe"
+    else if (Os.isLinux || Os.kind == Os.Kind.LinuxArm) "osate"
+    else "Contents/MacOS/osate")
   case _ if (Os.isWin) => sireumBin / "win" / "fmide" / "fmide.exe"
   case _ if (Os.isMac) => sireumBin / "mac" / "fmide.app" / "Contents" / "MacOS" / "osate"
   case _ if (Os.isLinux) => sireumBin / "linux" / "fmide" / "fmide"
