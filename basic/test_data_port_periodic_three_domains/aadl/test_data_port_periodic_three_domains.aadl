@@ -25,9 +25,16 @@
 --  Following the modeling guidelines from ARINC 653 Annex, 
 --     653 Partition = AADL process component
 --     653 Process = AADL thread component
---  It is not necessary to use the ARINC 653 AADL annex.  An alternate approach would be
+--  It is not necessary for INSPECTA to use the ARINC 653 AADL annex.  
+--  An alternate approach would be
 --  to use the annotations developed in the CASE project (with some possible additions or 
 --  modifications).
+--
+--  Some advantages to aligning with the 653 AADL annex would be
+--   - we may be able to make use of existing AADL tools for scheduling analysis and generation
+--     (such as the Galois (Adventium) FASTAR and SPICA tools
+--   - we have the benefit of saying that we are aligning with standardized concepts rather
+--     than "cooking our own"
 --
 --  Some excerpts from the AADL ARINC 653 Annex
 --
@@ -132,8 +139,12 @@ public
 	end P1.i;
 
 	-- Now, declare the virtual processors that model the partition runtime.
-	--  Note: This is an ARINC 653 feature that we wouldn't model directly using
-	--   the existing HARM CASE annotations.
+	--  Note: This is an ARINC 653 modeling concept that didn't appear directly using
+	--   the existing HAMR CASE annotations.  Does it provide any benefit for us?
+	--   One thing that it allows is the ability to specify the intra-partition scheduling
+	--   policy.  This doesn't help us now, as we only have one thread in a microKit protection domain, 
+	--   i.e., one 653 process in a partition, but it might be useful as the HAMR/microkit
+	--   capabilities evolve.
 	--
     virtual processor P1_rt
     	properties
@@ -170,6 +181,7 @@ public
 	process P2
 		features
 			read_port: in data port Base_Types::Integer_8;
+			-- The following property is not applicable for HAMR currently
 			-- {ARINC653::Sampling_Refresh_Period => 10ms;};
 			write_port: out data port Base_Types::Integer_8;
 	end P2;
@@ -214,6 +226,7 @@ public
 	process P3
 		features
 			read_port: in data port Base_Types::Integer_8;
+			-- The following property is not applicable for HAMR currently
 			-- {ARINC653::Sampling_Refresh_Period => 10ms;};
 	end P3;
 
@@ -282,9 +295,11 @@ public
 			Actual_Processor_Binding => (reference (proc.part2)) applies to p2;
 			Actual_Processor_Binding => (reference (proc.part3)) applies to p3;
 			HAMR::Platform => (seL4);
-		annex resolute {**
-			check HAMR_Guidelines
-		**};
+	    -- Remove the resolute check below for now, since we would need to adapt
+	    --  the resolute rules to account for the use of the ARINC 653 annex	
+		-- annex resolute {**
+		--	check HAMR_Guidelines
+		-- **};
 	end top.impl;
 
 end test_data_port_periodic_three_domains;
