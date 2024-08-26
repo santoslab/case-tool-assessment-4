@@ -9,7 +9,7 @@ void init(const int64_t *in_arg) {
 
 void compute(const int64_t * in_arg) {
   int8_t value;
-  
+
   if (sb_read_port_read(&value)) {
     printf("[%s] value {%d}\n", get_instance_name(), value);
 
