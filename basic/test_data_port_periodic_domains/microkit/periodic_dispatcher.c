@@ -1,8 +1,6 @@
 #include <stdint.h>
 #include <microkit.h>
-#include "printf.h"
-
-char* ID = "Periodic Dispatcher";
+#include "include/printf.h"
 
 #define PORT_TO_PRODUCER 1
 #define PORT_TO_CONSUMER 2
@@ -17,16 +15,12 @@ void pingComponents(){
 }
 
 void init(void) {
-  printf("%s: Init\n", ID);
-  
   pingComponents();
 }
 
 void notified(microkit_channel channel) {
   switch(channel) {
     case PORT_FROM_END_OF_SCHEDULE_PING:
-      //printf("%s: Received ping\n", ID);  
-      printf("----------------------\n");
       pingComponents();
     break;
   }

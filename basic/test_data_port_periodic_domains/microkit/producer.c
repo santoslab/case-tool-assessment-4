@@ -1,9 +1,6 @@
 #include <stdint.h>
 #include <microkit.h>
-#include "printf.h"
-#include <string.h>
-
-char* ID = "Producer";
+#include "include/printf.h"
 
 volatile uint8_t *to_consumer_vaddr;
 
@@ -12,7 +9,7 @@ volatile uint8_t *to_consumer_vaddr;
 int counter = 0;
 
 void init(void) {
-  printf("%s: Init\n", ID);
+  printf("%s: Init\n", microkit_name);
   counter = 0;
   *((int*) to_consumer_vaddr) = counter;
 }
@@ -20,11 +17,10 @@ void init(void) {
 void notified(microkit_channel channel) {
   switch(channel) {
     case PORT_FROM_PERIODIC_DISPATCHER:
-      //printf("%s: Received a pace\n", ID);  
 
       *((int*) to_consumer_vaddr) = ++counter;
 
-      printf("%s: Sent %i \n", ID, counter);
+      printf("%s: Sent %i \n", microkit_name, counter);
 
       break;
   }
